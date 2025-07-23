@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grayscale and RGB Pixel Viewer</title>
+  <style>
+    canvas {
+      border: 1px solid #ccc;
+      cursor: crosshair;
+      margin-top: 10px;
+    }
+    #info {
+      font-family: monospace;
+      margin-top: 10px;
+    }
+    #controls {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Grayscale & RGB Viewer with Smoothing Dropdown</h2>
+
+  <div id="controls">
+    <label>
+      <input type="checkbox" id="grayscaleToggle"> Apply Grayscale
+    </label>
+    <br><br>
+    <label for="smoothing">Choose Smoothing Type:</label>
+    <select id="smoothing">
+      <option value="none">None</option>
+      <option value="blurLow">Blur - Low</option>
+      <option value="blurHigh">Blur - High</option>
+      <option value="smooth">Canvas Smoothing</option>
+    </select>
+  </div>
+
+  <canvas id="canvas"></canvas>
+  <p id="info">Move your mouse over the image to see RGB values.</p>
+
+  <img id="source" src="https://via.placeholder.com/300x200" hidden>
+
+  <script>
+    const img = document.getElementById('source');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const grayscaleToggle = document.getElementById('grayscaleToggle');
+    const smoothingSelect = document.getElementById('smoothing');
+    const info = document.getElementById('info');
+
+    img.onload = () => {
+      drawImage();
+    };
+
+    grayscaleToggle.addEventListener('change', drawImage);
+    smoothingSelect.addEventListener('change', drawImage);
+
+    function drawImage() {
+      const applyGrayscale = grayscaleToggle.checked;
+      const smoothingType = smoothingSelect.value;
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Set canvas filter based on smoothing
+      if (smoothingType === 'blurLow') {
+        ctx.filter = 'blur(2px)';
+      } else if (smoothingType === 'blurHigh') {
+        ctx.filter = 'blur(5px)';
+      } else {
+        ctx.filter = 'none';
+      }
+
+      ctx.imageSmoothingEnabled = (smoothingType === 'smooth');
+      ctx.drawImage(img, 0, 0);
+
+      // Apply grayscale if checked
+      if (applyGrayscale) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+
+        for (let i = 0; i < pixels.length; i += 4) {
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          const gray = 0.3 * r + 0.59 * g + 0.11 * b;
+          pixels[i] = pixels[i + 1] = pixels[i + 2] = gray;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+      }
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor(e.clientX - rect.left);
+      const y = Math.floor(e.clientY - rect.top);
+
+      const pixel = ctx.getImageData(x, y, 1, 1).data;
+      const [r, g, b, a] = pixel;
+
+      info.textContent = `X: ${x}, Y: ${y} → R: ${r}, G: ${g}, B: ${b}, A: ${a}`;
+    });
+  </script>
+</body>
+</html>
